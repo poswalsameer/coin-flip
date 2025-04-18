@@ -1,0 +1,28 @@
+package main
+
+import (
+	"log"
+	"server/controller"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+)
+
+func main() {
+	// Create new Fiber instance
+	app := fiber.New()
+
+	// Cors
+	app.Use(cors.New(cors.Config{
+		AllowOrigins:     "http://localhost:3000",
+		AllowMethods:     "GET,POST,PUT,DELETE",
+		AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+		AllowCredentials: true,
+	}))
+
+	// The single API endpoint we have
+	app.Post("/api/result", controller.Result)
+
+	// Start the server
+	log.Fatal(app.Listen(":4200"))
+}

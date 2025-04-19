@@ -4,7 +4,15 @@ import { HeadsComponent, TailsComponent } from '../index';
 
 export default function CoinAnimationComponent() {
   return (
-    <div className="relative w-80 h-80" style={{ perspective: '1000px' }}>
+    <div 
+      className="
+      relative w-48 h-48
+      sm:relative sm:w-72 sm:h-72
+      md:relative md:w-72 md:h-72
+      lg:relative lg:w-72 lg:h-72
+      xl:relative xl:w-72 xl:h-72
+      2xl:relative 2xl:w-80 2xl:h-80" 
+      style={{ perspective: '1000px' }}>
       <motion.div
         className="relative w-full h-full"
         style={{ transformStyle: 'preserve-3d' }}

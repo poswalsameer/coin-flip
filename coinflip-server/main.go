@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"server/controller"
 
 	"github.com/gofiber/fiber/v2"
@@ -23,6 +22,5 @@ func main() {
 	// The single API endpoint we have
 	app.Post("/api/result", controller.Result)
 
-	// Start the server
-	log.Fatal(app.Listen(":4200"))
+	app.Listen(":4200")
 }

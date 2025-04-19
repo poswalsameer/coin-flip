@@ -91,14 +91,14 @@ export default function SidebarComponent() {
       }
     }
 
+    setBetResultAwaiting(true);
     try {
-      const response = await axios.post("http://localhost:4200/api/result", {
+      const response = await axios.post("https://coin-flip-tyuu.onrender.com/api/result", {
         option: option,
       })
 
       // adding delay to show animation on UI
-      setBetResultAwaiting(true);
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       setBetResult(response.data.result);
       setCurrentBetResults([...currentBetResults, response.data.result]);
       setBetResultAwaiting(false);

@@ -1,7 +1,8 @@
-import GameContainerComponent from "@/components/GameContainer";
-import HeaderComponent from "@/components/Header";
-import SidebarComponent from "@/components/Sidebar";
-
+import {
+  GameContainerComponent,
+  HeaderComponent,
+  SidebarComponent
+} from "@/components/index";
 
 export default function Home() {
   return (

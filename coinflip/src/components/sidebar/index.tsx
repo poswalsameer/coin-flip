@@ -1,12 +1,30 @@
 'use client'
 
-import React from 'react'
-import { Button } from './ui/button'
-import { Input } from './ui/input'
+import React, { useEffect, useRef } from 'react'
 import { useAtom, useSetAtom } from 'jotai'
-import { betAmountAtom, betResultAtom, betResultAwaitingAtom, currentBetResultsAtom, isBetEndedAtom, isBetStartedAtom, isCashoutClickedAtom, isFirstClickAtom, numberOfBetsAtom, walletBalanceAtom } from '@/store'
+import {
+  amountWonAtom,
+  betAmountAtom,
+  betResultAtom,
+  betResultAwaitingAtom,
+  currentBetResultsAtom,
+  isBetEndedAtom,
+  isBetStartedAtom,
+  isCashoutClickedAtom,
+  isFirstClickAtom,
+  multiplierAtom,
+  numberOfBetsAtom,
+  walletBalanceAtom
+} from '@/store'
 import axios from 'axios'
 import { toast } from 'sonner'
+import {
+  generateRandomNumber,
+  handleBetAmountChange,
+  playSound
+} from '@/helpers'
+import { Input } from '../ui/input'
+import { Button } from '../ui/button'
 
 export default function SidebarComponent() {
 
@@ -18,18 +36,29 @@ export default function SidebarComponent() {
   const [currentBetResults, setCurrentBetResults] = useAtom(currentBetResultsAtom);
   const [betResultAwaiting, setBetResultAwaiting] = useAtom(betResultAwaitingAtom);
   const [numberOfBets, setNumberOfBets] = useAtom(numberOfBetsAtom);
+  const [amountWon, setAmountWon] = useAtom(amountWonAtom);
 
   // set atoms
   const setIsCashoutClicked = useSetAtom(isCashoutClickedAtom);
   const setBetResult = useSetAtom(betResultAtom);
   const setIsBetEnded = useSetAtom(isBetEndedAtom);
+  const setMultiplier = useSetAtom(multiplierAtom);
+
+  // useRefs
+  const betSoundRef = useRef<HTMLAudioElement | undefined>(
+    typeof Audio !== "undefined" ? new Audio("/betButtonSound.mp3") : undefined
+  );
+
+  const cashoutSoundRef = useRef<HTMLAudioElement | undefined>(
+    typeof Audio !== "undefined" ? new Audio("/cashoutSound.mp3") : undefined
+  );
 
 
-  const generateRandomNumber = () => {
-    return Math.floor(Math.random() * 2) + 1;
-  }
-
+  // Function triggered when bet button clicked
   const handleBetStart = () => {
+    //updating the older values
+    setMultiplier(0.00);
+
     if (betAmount < 0) {
       toast.error("Cannot place a bet less than Rs.0");
       return;
@@ -39,16 +68,17 @@ export default function SidebarComponent() {
       return;
     }
 
-    setWalletBalance((prev: number) => prev - betAmount);
+    const newBalance = walletBalance - betAmount;
+    setWalletBalance(newBalance);
+    localStorage.setItem('walletBalance', newBalance.toString());
     setIsBetStarted(!isBetStarted);
     setIsBetEnded(false);
+
+    playSound(betSoundRef);
   }
 
-  const handleBetAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(e.target.value);
-    setBetAmount(value);
-  }
 
+  // Function triggered when heads/tails/random clicked
   const handleOptionClick = async (option: string) => {
     setIsFirstClick(false);
 
@@ -56,10 +86,8 @@ export default function SidebarComponent() {
       const number = generateRandomNumber();
       if (number === 1) {
         option = "heads";
-        console.log("head in random")
       } else {
         option = "tails";
-        console.log("tails in random")
       }
     }
 
@@ -67,8 +95,6 @@ export default function SidebarComponent() {
       const response = await axios.post("http://localhost:4200/api/result", {
         option: option,
       })
-
-      console.log("response:", response.data.result);
 
       // adding delay to show animation on UI
       setBetResultAwaiting(true);
@@ -78,13 +104,31 @@ export default function SidebarComponent() {
       setBetResultAwaiting(false);
 
       if (response.data.result === option) {
-        setNumberOfBets(numberOfBets + 1);
+        const newNumberOfBets = numberOfBets + 1;
+        setNumberOfBets(newNumberOfBets);
+        setMultiplier(parseFloat(Math.pow(1.96, newNumberOfBets).toFixed(2)));
+        setAmountWon(parseFloat((betAmount * Math.pow(1.96, newNumberOfBets)).toFixed(2)));
+
+        // Check if player has reached 20 consecutive wins
+        if (newNumberOfBets >= 20) {
+          setMultiplier(parseFloat(Math.pow(1.96, newNumberOfBets).toFixed(2)));
+          setAmountWon(parseFloat((betAmount * Math.pow(1.96, newNumberOfBets)).toFixed(2)));
+          setIsBetEnded(true);
+          setIsBetStarted(false);
+          setIsFirstClick(true);
+          setNumberOfBets(0);
+          setCurrentBetResults([]);
+
+          playSound(cashoutSoundRef);
+        }
       } else {
+        setMultiplier(0.00);
         setNumberOfBets(0);
         setCurrentBetResults([]);
         setIsBetStarted(false);
         setIsFirstClick(true);
         setIsBetEnded(true);
+        setAmountWon(0.00);
       }
 
     } catch (error) {
@@ -92,14 +136,53 @@ export default function SidebarComponent() {
     }
   }
 
+  const handleDoubleAmount = () => {
+    const newAmount = parseFloat((betAmount * 2).toFixed(2));
+    if (newAmount > walletBalance) {
+      toast.error("Cannot double bet amount beyond your wallet balance");
+      return;
+    }
+    setBetAmount(newAmount);
+  }
+
+  const handleHalfAmount = () => {
+    let newAmount = parseFloat((betAmount / 2).toFixed(2));
+    if (newAmount < 0.01) {
+      newAmount = 0.00;
+    }
+    setBetAmount(newAmount);
+  }
+
+  // Function triggered when cashout button clicked
   const handleCashoutClicked = () => {
+    setMultiplier(parseFloat(Math.pow(1.96, numberOfBets).toFixed(2)));
+    setAmountWon(parseFloat((betAmount * Math.pow(1.96, numberOfBets)).toFixed(2)));
     setIsCashoutClicked(true);
     setIsBetEnded(true);
     setCurrentBetResults([]);
     setIsBetStarted(false);
     setIsFirstClick(true);
     setNumberOfBets(0);
+
+    playSound(cashoutSoundRef);
+
+    // Update wallet balance in state and localStorage
+    const newBalance = walletBalance + amountWon;
+    setWalletBalance(newBalance);
+    localStorage.setItem('walletBalance', newBalance.toString());
   }
+
+  useEffect(() => {
+    const storedBalance = localStorage.getItem('walletBalance');
+
+    if (storedBalance) {
+      setWalletBalance(parseFloat(storedBalance));
+    } else {
+      const initialBalance = 10000;
+      localStorage.setItem('walletBalance', initialBalance.toString());
+      setWalletBalance(initialBalance);
+    }
+  }, [setWalletBalance]);
 
   return (
     <div className='min-h-[85vh] w-[25%] bg-[#213743] rounded-l-xl flex flex-col justify-start items-center gap-y-5'>
@@ -114,7 +197,7 @@ export default function SidebarComponent() {
             type='number'
             value={betAmount}
             placeholder='0.00'
-            onChange={handleBetAmountChange}
+            onChange={(e) => handleBetAmountChange(e, setBetAmount)}
             onBlur={() => {
               if (betAmount < 0) {
                 setBetAmount(0.00);
@@ -127,12 +210,14 @@ export default function SidebarComponent() {
             <Button
               className='h-full w-1/2 bg-transparent hover:bg-[#47677a] rounded-none border-r-2 border-[#0F212E]/60 text-xs font-semibold hover:cursor-pointer'
               disabled={isBetStarted}
+              onClick={handleHalfAmount}
             >
               1/2
             </Button>
             <Button
               className='h-full w-1/2 bg-transparent hover:bg-[#47677a] p-0 rounded-l-none rounded-r-[4px] text-xs font-semibold hover:cursor-pointer'
               disabled={isBetStarted}
+              onClick={handleDoubleAmount}
             >
               2x
             </Button>
@@ -149,7 +234,9 @@ export default function SidebarComponent() {
         </div>
         <Input
           value={(betAmount * Math.pow(1.96, numberOfBets)).toFixed(2)}
-          className='h-10 w-full bg-[#2F4553] rounded-sm p-2 flex font-semibold text-white shadow-md border-none focus-visible:ring-0 placeholder:text-white' />
+          className='h-10 w-full bg-[#2F4553] rounded-sm p-2 flex font-semibold text-white shadow-md border-none focus-visible:ring-0 placeholder:text-white'
+          readOnly
+        />
       </div> : null}
 
 

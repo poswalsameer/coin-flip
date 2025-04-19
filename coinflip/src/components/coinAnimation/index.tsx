@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import HeadsComponent from './Heads';
-import TailsComponent from './Tails';
+import { HeadsComponent, TailsComponent } from '../index';
 
 export default function CoinAnimationComponent() {
   return (
@@ -16,7 +15,7 @@ export default function CoinAnimationComponent() {
           ease: 'linear'
         }}
       >
-        <div style={{ 
+        <div style={{
           backfaceVisibility: 'hidden',
           position: 'absolute',
           width: '100%',
@@ -24,7 +23,7 @@ export default function CoinAnimationComponent() {
         }}>
           <HeadsComponent />
         </div>
-        <div style={{ 
+        <div style={{
           backfaceVisibility: 'hidden',
           position: 'absolute',
           width: '100%',

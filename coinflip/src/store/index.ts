@@ -19,3 +19,7 @@ export const currentBetResultsAtom = atom<(string[])>([]);
 export const betResultAwaitingAtom = atom<boolean>(false);
 
 export const isBetEndedAtom = atom<boolean>(false);
+
+export const amountWonAtom = atom<number>(0);
+
+export const multiplierAtom = atom<number>(0.00);

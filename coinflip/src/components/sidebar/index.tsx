@@ -92,8 +92,10 @@ export default function SidebarComponent() {
     }
 
     setBetResultAwaiting(true);
+    // Vercel - https://coin-flip-q1yq.vercel.app/
+    // Render - https://coin-flip-tyuu.onrender.com
     try {
-      const response = await axios.post("https://coin-flip-tyuu.onrender.com/api/result", {
+      const response = await axios.post("https://coin-flip-q1yq.vercel.app/api/result", {
         option: option,
       })
 
